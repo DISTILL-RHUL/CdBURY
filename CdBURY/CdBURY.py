@@ -1,6 +1,6 @@
 import numpy,pandas
-import core
-from classes import CadmiumMassIsotope,FluxType,CadmiumFluxes,Time,DynamicTime,MultiTime,Perturbation
+from . import core
+from .classes import CadmiumMassIsotope, FluxType, CadmiumFluxes, Time, DynamicTime, MultiTime, Perturbation
 
 from typing import Self
 

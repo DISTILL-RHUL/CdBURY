@@ -1,4 +1,4 @@
-from classes import CadmiumMassIsotope
+from CdBURY.classes import CadmiumMassIsotope
 
 def calculate(input_flux: CadmiumMassIsotope,
               oxyhydroxide_flux: CadmiumMassIsotope,

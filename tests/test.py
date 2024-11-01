@@ -1,7 +1,7 @@
 from matplotlib import pyplot
 
-from CdBURY.classes import Time,CadmiumMassIsotope,CadmiumFluxes,Perturbation,FluxType
-from CdBURY import CdBURY
+from CdBURY.classes import Time,CadmiumMassIsotope,CadmiumFluxes,Perturbation,FluxType # type: ignore
+from CdBURY import CdBURY # type: ignore
 
 from geochemistry_helpers import Sampling,GaussianProcess # type: ignore
 
