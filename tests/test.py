@@ -1,9 +1,7 @@
 from matplotlib import pyplot
 
-from CdBURY.classes import Time,CadmiumMassIsotope,CadmiumFluxes,Perturbation,FluxType # type: ignore
-from CdBURY import CdBURY # type: ignore
-
-from geochemistry_helpers import Sampling,GaussianProcess # type: ignore
+from CdBURY.classes import Time,CadmiumMassIsotope,CadmiumFluxes,Perturbation,FluxType
+from CdBURY import CdBURY
 
 initial_seawater = CadmiumMassIsotope(1.0*8.36e11,-0.1)
 
@@ -41,7 +39,7 @@ adjusted_isotope_offsets = CadmiumFluxes(input_balanced.isotope_delta,
                                             isotope_offsets.sulphide)
 
 
-time_configuration = Time(55.92,0.001,55.00,units="Myr")
+time_configuration = Time(1.0,0.001,0.0001,units="Myr")
 model = CdBURY.Model(time_configuration,
                     initial_seawater,
                     initial_fluxes,
@@ -49,7 +47,7 @@ model = CdBURY.Model(time_configuration,
                     dynamic_mass=True)
 
 
-model.change_flux(Perturbation(55.50,
+model.change_flux(Perturbation(0.50,
                                FluxType.organic,
                                CadmiumMassIsotope(0.0,-0.8)))
 
@@ -73,6 +71,10 @@ axes[0].get_yaxis().get_major_formatter().set_useOffset(False)
 
 axes[0].set_ylim((-0.5,0.5))
 
-pyplot.show()
+axes[-1].set_xlabel("Time (Myr)")
+axes[0].set_ylabel("Seawater\n $\\delta^{114}$Cd")
+axes[1].set_ylabel("Flux\n multiplier")
+axes[2].set_ylabel("Sulphide\n flux")
+axes[3].set_ylabel("Seawater\n flux")
 
-a = 5
+pyplot.show()

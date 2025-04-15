@@ -1,6 +1,6 @@
 import numpy,pandas
-from . import core
-from .classes import CadmiumMassIsotope, FluxType, CadmiumFluxes, Time, DynamicTime, MultiTime, Perturbation
+import CdBURY.core as core
+from CdBURY.classes import CadmiumMassIsotope, FluxType, CadmiumFluxes, Time, Perturbation
 
 from typing import Self
 
@@ -31,41 +31,29 @@ class Model:
         self.isotope_offsets = isotope_offsets
         self.dynamic_mass = dynamic_mass
 
-        if isinstance(time,Time) or isinstance(time,MultiTime):
-            self.seawater = numpy.empty(time.length+2,dtype="object")
-            self.seawater[0] = initial_seawater
+        self.seawater = numpy.empty(time.length+2,dtype="object")
+        self.seawater[0] = initial_seawater
 
-            self.flux_multiplier = numpy.empty(time.length+2)
-            self.flux_multiplier[0] = 0.0
+        self.flux_multiplier = numpy.empty(time.length+2)
+        self.flux_multiplier[0] = 0.0
 
-            self.input_flux = numpy.empty(time.length+2,dtype="object")
-            self.input_flux[0] = CadmiumMassIsotope(initial_fluxes.input,isotope_offsets.input)
+        self.input_flux = numpy.empty(time.length+2,dtype="object")
+        self.input_flux[0] = CadmiumMassIsotope(initial_fluxes.input,isotope_offsets.input)
 
-            self.oxyhydroxide_flux = numpy.empty(time.length+2,dtype="object")
-            self.oxyhydroxide_flux[0] = CadmiumMassIsotope(initial_fluxes.oxyhydroxide,initial_seawater.isotope_delta+isotope_offsets.oxyhydroxide)
+        self.oxyhydroxide_flux = numpy.empty(time.length+2,dtype="object")
+        self.oxyhydroxide_flux[0] = CadmiumMassIsotope(initial_fluxes.oxyhydroxide,initial_seawater.isotope_delta+isotope_offsets.oxyhydroxide)
 
-            self.carbonate_flux = numpy.empty(time.length+2,dtype="object")
-            self.carbonate_flux[0] = CadmiumMassIsotope(initial_fluxes.carbonate,isotope_offsets.carbonate+initial_seawater.isotope_delta)
+        self.carbonate_flux = numpy.empty(time.length+2,dtype="object")
+        self.carbonate_flux[0] = CadmiumMassIsotope(initial_fluxes.carbonate,isotope_offsets.carbonate+initial_seawater.isotope_delta)
 
-            self.clay_flux = numpy.empty(time.length+2,dtype="object")
-            self.clay_flux[0] = CadmiumMassIsotope(initial_fluxes.clay,isotope_offsets.clay+initial_seawater.isotope_delta)
+        self.clay_flux = numpy.empty(time.length+2,dtype="object")
+        self.clay_flux[0] = CadmiumMassIsotope(initial_fluxes.clay,isotope_offsets.clay+initial_seawater.isotope_delta)
 
-            self.organic_flux = numpy.empty(time.length+2,dtype="object")
-            self.organic_flux[0] = CadmiumMassIsotope(initial_fluxes.organic,isotope_offsets.organic+initial_seawater.isotope_delta)
+        self.organic_flux = numpy.empty(time.length+2,dtype="object")
+        self.organic_flux[0] = CadmiumMassIsotope(initial_fluxes.organic,isotope_offsets.organic+initial_seawater.isotope_delta)
 
-            self.sulphide_flux = numpy.empty(time.length+2,dtype="object")
-            self.sulphide_flux[0] = CadmiumMassIsotope(initial_fluxes.sulphide,isotope_offsets.sulphide+initial_seawater.isotope_delta)
-        elif isinstance(time,DynamicTime):
-            self.seawater = [initial_seawater]
-            self.flux_multiplier = [0.0]
-            self.input_flux = [CadmiumMassIsotope(initial_fluxes.input,isotope_offsets.input)]
-            self.oxyhydroxide_flux = [CadmiumMassIsotope(initial_fluxes.oxyhydroxide,initial_seawater.isotope_delta+isotope_offsets.oxyhydroxide)]
-            self.carbonate_flux = [CadmiumMassIsotope(initial_fluxes.carbonate,isotope_offsets.carbonate+initial_seawater.isotope_delta)]
-            self.clay_flux = [CadmiumMassIsotope(initial_fluxes.clay,isotope_offsets.clay+initial_seawater.isotope_delta)]
-            self.organic_flux = [CadmiumMassIsotope(initial_fluxes.organic,isotope_offsets.organic+initial_seawater.isotope_delta)]
-            self.sulphide_flux = [CadmiumMassIsotope(initial_fluxes.sulphide,isotope_offsets.sulphide+initial_seawater.isotope_delta)]
-        else:
-            raise ValueError("Unknown time type")
+        self.sulphide_flux = numpy.empty(time.length+2,dtype="object")
+        self.sulphide_flux[0] = CadmiumMassIsotope(initial_fluxes.sulphide,isotope_offsets.sulphide+initial_seawater.isotope_delta)
 
     @staticmethod
     def adjust_fluxes(seawater: CadmiumMassIsotope, 
@@ -173,6 +161,7 @@ class Model:
 
         next_seawater_isotopes = CadmiumMassIsotope.from_masses(next_cadmium_114_mass,next_cadmium_110_mass)
         next_flux_multiplier = (mass_gradient*timestep)/seawater.mass if dynamic_mass else 0.0
+
         return (next_seawater_isotopes,adjusted_fluxes,next_flux_multiplier,(mass_gradient,(gradient_114,gradient_110)))
 
     def record(self:Self,
@@ -195,25 +184,6 @@ class Model:
         :rtype: None"""
         match self.time:
             case Time():
-                self.seawater[timestep+1] = seawater_isotopes
-                self.input_flux[timestep+1] = fluxes.input
-                self.oxyhydroxide_flux[timestep+1] = fluxes.oxyhydroxide
-                self.carbonate_flux[timestep+1] = fluxes.carbonate
-                self.clay_flux[timestep+1] = fluxes.clay
-                self.organic_flux[timestep+1] = fluxes.organic
-                self.sulphide_flux[timestep+1] = fluxes.sulphide
-                self.flux_multiplier[timestep+1] = flux_multiplier
-            case DynamicTime():
-                self.seawater.append(seawater_isotopes)
-                self.input_flux.append(fluxes.input)
-                self.oxyhydroxide_flux.append(fluxes.oxyhydroxide)
-                self.carbonate_flux.append(fluxes.carbonate)
-                self.clay_flux.append(fluxes.clay)
-                self.organic_flux.append(fluxes.organic)
-                self.sulphide_flux.append(fluxes.sulphide)
-                self.flux_multiplier.append(flux_multiplier)
-                self.time.steps.append(timestep)
-            case MultiTime():
                 self.seawater[timestep+1] = seawater_isotopes
                 self.input_flux[timestep+1] = fluxes.input
                 self.oxyhydroxide_flux[timestep+1] = fluxes.oxyhydroxide
@@ -268,7 +238,7 @@ class Model:
             self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
 
             for perturbation in self.perturbations:
-                if time>perturbation.time and time<perturbation.time+self.time.step:
+                if time>perturbation.time and time<=perturbation.time+self.time.step:
                     if perturbation.type == FluxType.input:
                         self.input_flux[timestep+1] = perturbation.isotope_flux
                     elif perturbation.type == FluxType.oxyhydroxide:
@@ -283,7 +253,6 @@ class Model:
                         self.sulphide_flux[timestep+1] = perturbation.isotope_flux
                     else:
                         raise ValueError("Unknown perturbation type")
-                a = 5
         if self.input_flux[-1] is None:
             self.seawater = self.seawater[:-1]
             self.input_flux = self.input_flux[:-1]
@@ -294,7 +263,6 @@ class Model:
             self.sulphide_flux = self.sulphide_flux[:-1]
 
     def invert(self:Self,
-               dataset_ages: numpy.ndarray,
                dataset_values: numpy.ndarray,
                parameter: FluxType) -> None:
         """invert changes the specified parameter to try and match a dataset
@@ -309,270 +277,535 @@ class Model:
         :return: None
         :rtype: None"""        
         # Calculate the required change in the chosen parameter
-        if parameter == FluxType.organic:
-            match self.time:
-                case Time():
-                    for timestep,time in enumerate(self.time.as_array()[:-2]):
-                        # Calculate the target isotope ratio
-                        target_cadmium_isotope_delta = dataset_values[timestep+1]
-                        # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
+        match parameter:
+            case FluxType.organic:
+                for timestep,time in enumerate(self.time.as_array()[:-2]):
+                    # Calculate the target isotope ratio
+                    target_cadmium_isotope_delta = dataset_values[timestep+1]
+                    # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
 
-                        current_fluxes = self.get_fluxes(timestep)
-                        current_seawater = self.seawater[timestep]
-                        current_flux_multiplier = self.flux_multiplier[timestep]
+                    current_fluxes = self.get_fluxes(timestep)
+                    current_seawater = self.seawater[timestep]
+                    current_flux_multiplier = self.flux_multiplier[timestep]
 
-                        # Calculate the organic ratio required to reach the target
-                        extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        current_seawater,
-                                                                        current_fluxes)
-                        organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/self.time.step_in_yr
-                        if organic_flux_per_year_0<0.0:
-                            organic_flux_per_year_0 = 0.0
-                        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
-
-                        # Group the fluxes with the new estimated organic flux
-                        current_fluxes_with_organic = CadmiumFluxes(current_fluxes.input,
-                                                                    current_fluxes.oxyhydroxide,
-                                                                    current_fluxes.carbonate,
-                                                                    current_fluxes.clay,
-                                                                    estimated_organic_flux_0,
-                                                                    current_fluxes.sulphide)
-
-                        # Perform the first timestep with the estimated organic flux
-                        (seawater_isotopes_0,
-                        adjusted_fluxes_0,
-                        flux_multiplier_0,
-                        gradients_0) = Model.step_forward(self.time.step_in_yr,
+                    # Calculate the organic ratio required to reach the target
+                    extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
                                                                     current_seawater,
-                                                                    current_fluxes_with_organic,
-                                                                    self.isotope_offsets,
-                                                                    current_flux_multiplier,
-                                                                    self.dynamic_mass)
+                                                                    current_fluxes,
+                                                                    self.time.step_in_yr)
+                    organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/self.time.step_in_yr
+                    if organic_flux_per_year_0<0.0:
+                        organic_flux_per_year_0 = 0.0
+                    estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
 
-                        # Perform another timestep
-                        target_cadmium_isotope_delta = dataset_values[timestep+2]
-                        # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
+                    # Group the fluxes with the new estimated organic flux
+                    current_fluxes_with_organic = CadmiumFluxes(current_fluxes.input,
+                                                                current_fluxes.oxyhydroxide,
+                                                                current_fluxes.carbonate,
+                                                                current_fluxes.clay,
+                                                                estimated_organic_flux_0,
+                                                                current_fluxes.sulphide)
 
-                        extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        seawater_isotopes_0,
-                                                                        adjusted_fluxes_0)
-                        organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/self.time.step_in_yr
-                        if organic_flux_per_year_1<0.0:
-                            organic_flux_per_year_1 = 0.0
-                        estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
+                    # Perform the first timestep with the estimated organic flux
+                    (seawater_isotopes_0,
+                    adjusted_fluxes_0,
+                    flux_multiplier_0,
+                    gradients_0) = Model.step_forward(self.time.step_in_yr,
+                                                                current_seawater,
+                                                                current_fluxes_with_organic,
+                                                                self.isotope_offsets,
+                                                                current_flux_multiplier,
+                                                                self.dynamic_mass)
 
-                        # Group the fluxes with the new estimated organic flux
-                        next_fluxes = CadmiumFluxes(adjusted_fluxes_0.input,
-                                                    adjusted_fluxes_0.oxyhydroxide,
-                                                    adjusted_fluxes_0.carbonate,
-                                                    adjusted_fluxes_0.clay,
-                                                    estimated_organic_flux_1,
-                                                    adjusted_fluxes_0.sulphide)
+                    # Perform another timestep
+                    target_cadmium_isotope_delta = dataset_values[timestep+2]
+                    # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
+
+                    extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                                    seawater_isotopes_0,
+                                                                    adjusted_fluxes_0,
+                                                                    self.time.step_in_yr)
+                    organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/self.time.step_in_yr
+                    if organic_flux_per_year_1<0.0:
+                        organic_flux_per_year_1 = 0.0
+                    estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
+
+                    # Group the fluxes with the new estimated organic flux
+                    next_fluxes = CadmiumFluxes(adjusted_fluxes_0.input,
+                                                adjusted_fluxes_0.oxyhydroxide,
+                                                adjusted_fluxes_0.carbonate,
+                                                adjusted_fluxes_0.clay,
+                                                estimated_organic_flux_1,
+                                                adjusted_fluxes_0.sulphide)
+                
+                    (seawater_isotopes_1,
+                    adjusted_fluxes_1,
+                    flux_multiplier_1,
+                    gradients_1) = Model.step_forward(self.time.step_in_yr,
+                                                                seawater_isotopes_0,
+                                                                next_fluxes,
+                                                                self.isotope_offsets,
+                                                                flux_multiplier_0,
+                                                                self.dynamic_mass)
                     
-                        (seawater_isotopes_1,
-                        adjusted_fluxes_1,
-                        flux_multiplier_1,
-                        gradients_1) = Model.step_forward(self.time.step_in_yr,
-                                                                    seawater_isotopes_0,
-                                                                    next_fluxes,
-                                                                    self.isotope_offsets,
-                                                                    flux_multiplier_0,
-                                                                    self.dynamic_mass)
-                        
-                        # Average the two estimated organic fluxes
-                        average_seawater_isotopes = (seawater_isotopes_0+seawater_isotopes_1)*0.5
-                        average_isotope_fluxes = (adjusted_fluxes_0+adjusted_fluxes_1)*0.5
-                        average_flux_multiplier = (flux_multiplier_0+flux_multiplier_1)*0.5
+                    # Average the two estimated organic fluxes
+                    average_seawater_isotopes = (seawater_isotopes_0+seawater_isotopes_1)*0.5
+                    average_isotope_fluxes = (adjusted_fluxes_0+adjusted_fluxes_1)*0.5
+                    average_flux_multiplier = (flux_multiplier_0+flux_multiplier_1)*0.5
 
-                        # if average_organic_flux.mass<0:
-                        #     average_organic_flux.mass = CadmiumMassIsotope(0.0,self.seawater[timestep].isotope_delta+self.isotope_offsets.organic).mass
+                    # if average_organic_flux.mass<0:
+                    #     average_organic_flux.mass = CadmiumMassIsotope(0.0,self.seawater[timestep].isotope_delta+self.isotope_offsets.organic).mass
 
-                        # Record the new fluxes
-                        self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
-                        
-                        a = 5
-                case DynamicTime():
-                    current_time = self.time.start
-                    timestep_number = 0
-                    trial_timestep = self.time.initial_step
-
-                    while self.time.inside(current_time):
-                        match self.time.reversed:
-                            case True:
-                                trial_time = current_time - trial_timestep
-                            case False:
-                                trial_time = current_time + trial_timestep
-
-                        # Calculate the target isotope ratio
-                        target_cadmium_isotope_delta = linear_interpolate(dataset_ages[::-1],dataset_values[::-1],trial_time)
-
-                        current_fluxes = self.get_fluxes(-1)
-                        current_seawater = self.seawater[-1]
-                        current_flux_multiplier = self.flux_multiplier[-1]
-
-                        # Calculate the organic ratio required to reach the target
-                        extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        current_seawater,
-                                                                        current_fluxes)
-                        organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/(trial_timestep*self.time.units)
-
-                        if organic_flux_per_year_0<0.0:
-                            organic_flux_per_year_0 = 0.0
-                        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
-
-                        # Group the fluxes with the new estimated organic flux
-                        current_fluxes_with_organic = CadmiumFluxes(current_fluxes.input,
-                                                                    current_fluxes.oxyhydroxide,
-                                                                    current_fluxes.carbonate,
-                                                                    current_fluxes.clay,
-                                                                    estimated_organic_flux_0,
-                                                                    current_fluxes.sulphide)
-
-                        # Perform the first timestep with the estimated organic flux
-                        (seawater_isotopes_0,
-                        adjusted_fluxes_0,
-                        flux_multiplier_0,
-                        gradients_0) = Model.step_forward(trial_timestep*self.time.units,
-                                                                    current_seawater,
-                                                                    current_fluxes_with_organic,
-                                                                    self.isotope_offsets,
-                                                                    current_flux_multiplier,
-                                                                    self.dynamic_mass)
-
-                        # Perform another timestep
-                        target_cadmium_isotope_delta = linear_interpolate(dataset_ages[::-1],dataset_values[::-1],trial_time+trial_timestep)
-                        # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
-
-                        extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        seawater_isotopes_0,
-                                                                        adjusted_fluxes_0)
-                        organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/(trial_timestep*self.time.units)
-                        if organic_flux_per_year_1<0.0:
-                            organic_flux_per_year_1 = 0.0
-                        estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
-
-                        # Group the fluxes with the new estimated organic flux
-                        next_fluxes = CadmiumFluxes(adjusted_fluxes_0.input,
-                                                    adjusted_fluxes_0.oxyhydroxide,
-                                                    adjusted_fluxes_0.carbonate,
-                                                    adjusted_fluxes_0.clay,
-                                                    estimated_organic_flux_1,
-                                                    adjusted_fluxes_0.sulphide)
+                    # Record the new fluxes
+                    self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
                     
-                        (seawater_isotopes_1,
-                        adjusted_fluxes_1,
-                        flux_multiplier_1,
-                        gradients_1) = Model.step_forward(trial_timestep*self.time.units,
-                                                                    seawater_isotopes_0,
-                                                                    next_fluxes,
-                                                                    self.isotope_offsets,
-                                                                    flux_multiplier_0,
-                                                                    self.dynamic_mass)
+                    a = 5
+            case _:
+                raise(ValueError("I don't know how to do this yet"))
 
-                        if ((estimated_organic_flux_0.mass<1e-12 and estimated_organic_flux_1.mass<1e-12) 
-                            or numpy.abs(estimated_organic_flux_0.mass-estimated_organic_flux_1.mass)/(((estimated_organic_flux_0.mass+estimated_organic_flux_1.mass)/2))<0.05
-                            or trial_timestep<=self.time.min_step):
-                            # Accept the sample
-                            average_seawater_isotopes = (seawater_isotopes_0+seawater_isotopes_1)*0.5
-                            average_isotope_fluxes = (adjusted_fluxes_0+adjusted_fluxes_1)*0.5
-                            average_flux_multiplier = (flux_multiplier_0+flux_multiplier_1)*0.5
+    def invert_rk4(self,
+                   dataset_values: numpy.ndarray,
+                   parameter: FluxType) -> None:
+        match parameter:
+            case FluxType.organic:
+                for timestep,time in enumerate(self.time.as_array()[:-2]):
+                    current_fluxes = self.get_fluxes(timestep)
+                    current_seawater = self.seawater[timestep]
+                    current_flux_multiplier = self.flux_multiplier[timestep]
 
-                            # Record the new fluxes
-                            self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,trial_timestep)
+                    initial_seawater = current_seawater
+                    initial_flux_multiplier = current_flux_multiplier
 
-                            trial_timestep = self.time.increase_step(trial_timestep)
-                            timestep_number += 1
-                            current_time = trial_time
-
-                            a = 5 
-                        else:
-                            #reject
-                            trial_timestep = self.time.decrease_step(trial_timestep)
-                            a = 5
-                case MultiTime():
-                    for timestep,time in enumerate(self.time.as_array()[:-2]):
-                        # Calculate the target isotope ratio
-                        target_cadmium_isotope_delta = dataset_values[timestep+1]
-                        # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
-
-                        current_fluxes = self.get_fluxes(timestep)
-                        current_seawater = self.seawater[timestep]
-                        current_flux_multiplier = self.flux_multiplier[timestep]
-
-                        # Calculate the organic ratio required to reach the target
-                        extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        current_seawater,
-                                                                        current_fluxes)
-                        step_length = numpy.abs(self.time.steps[timestep+1]-self.time.steps[timestep])
-                        organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/(step_length*self.time.units)
-                        # if organic_flux_per_year_0<0.0:
-                            # organic_flux_per_year_0 = 0.0
-                        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
-
-                        # Group the fluxes with the new estimated organic flux
-                        current_fluxes_with_organic = CadmiumFluxes(current_fluxes.input,
-                                                                    current_fluxes.oxyhydroxide,
-                                                                    current_fluxes.carbonate,
-                                                                    current_fluxes.clay,
-                                                                    estimated_organic_flux_0,
-                                                                    current_fluxes.sulphide)
-
-                        # Perform the first timestep with the estimated organic flux
-                        (seawater_isotopes_0,
-                        adjusted_fluxes_0,
-                        flux_multiplier_0,
-                        gradients_0) = Model.step_forward(step_length*self.time.units,
-                                                                    current_seawater,
-                                                                    current_fluxes_with_organic,
-                                                                    self.isotope_offsets,
-                                                                    current_flux_multiplier,
-                                                                    self.dynamic_mass)
-
-                        # Perform another timestep
-                        target_cadmium_isotope_delta = dataset_values[timestep+2]
-                        # target_cadmium_isotope_ratio = self.delta_to_ratio(target_cadmium_isotope_delta)
-
-                        extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
-                                                                        seawater_isotopes_0,
-                                                                        adjusted_fluxes_0)
-                        step_length = numpy.abs(self.time.steps[timestep+2]-self.time.steps[timestep+1])
-                        organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/(step_length*self.time.units)
-                        # if organic_flux_per_year_1<0.0:
-                            # organic_flux_per_year_1 = 0.0
-
-                        estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
-
-                        # Group the fluxes with the new estimated organic flux
-                        next_fluxes = CadmiumFluxes(adjusted_fluxes_0.input,
-                                                    adjusted_fluxes_0.oxyhydroxide,
-                                                    adjusted_fluxes_0.carbonate,
-                                                    adjusted_fluxes_0.clay,
-                                                    estimated_organic_flux_1,
-                                                    adjusted_fluxes_0.sulphide)
+                    average_fluxes = self.invert_rk4_step_organic(current_fluxes,
+                                                            current_seawater,
+                                                            current_flux_multiplier,
+                                                            timestep,
+                                                            dataset_values)
+                    # Apply the averaged fluxes
+                    step_length = numpy.abs(self.time.steps[timestep+1]-self.time.steps[timestep])
+                    
+                    (seawater_isotopes_final,
+                    adjusted_fluxes_final,
+                    flux_multiplier_final,
+                    gradients_final) = Model.step_forward(step_length*self.time.units,
+                                                                initial_seawater,
+                                                                average_fluxes,
+                                                                self.isotope_offsets,
+                                                                initial_flux_multiplier,
+                                                                self.dynamic_mass)
+                    
+                    # Record
+                    self.record(seawater_isotopes_final,adjusted_fluxes_final,flux_multiplier_final,timestep)
+            case _:
+                raise(ValueError("I don't know how to do this yet"))
                         
-                        (seawater_isotopes_1,
-                        adjusted_fluxes_1,
-                        flux_multiplier_1,
-                        gradients_1) = Model.step_forward(step_length*self.time.units,
-                                                                    seawater_isotopes_0,
-                                                                    next_fluxes,
-                                                                    self.isotope_offsets,
-                                                                    flux_multiplier_0,
-                                                                    self.dynamic_mass)
-                        
-                        # Average the two estimated organic fluxes
-                        average_seawater_isotopes = (seawater_isotopes_0+seawater_isotopes_1)*0.5
-                        average_isotope_fluxes = (adjusted_fluxes_0+adjusted_fluxes_1)*0.5
-                        average_flux_multiplier = (flux_multiplier_0+flux_multiplier_1)*0.5
+    def invert_rk4_step_organic(self,
+                         current_fluxes: CadmiumFluxes,
+                         current_seawater: CadmiumMassIsotope,
+                         current_flux_multiplier: float,
+                         timestep: int,
+                         dataset_1_values: numpy.ndarray) -> CadmiumFluxes:
+        """invert changes the specified parameter to try and match a dataset
 
-                        # Record the new fluxes
-                        self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
+        :param dataset_ages: Ages of the dataset you want the model to try and match
+        :type dataset_ages: numpy.ndarray
+        :param dataset_values: δ114Cd dataset you want the model to try and match
+        :type dataset_values: numpy.ndarray
+        :param parameter: Specifies the type of flux you want to change
+        :type parameter: FluxType
+        """
+        initial_fluxes = current_fluxes
+        initial_seawater = current_seawater
+        initial_flux_multiplier = current_flux_multiplier
+        
+        half_step_length = numpy.abs(self.time.steps[timestep+1]-self.time.steps[timestep])/2
+        half_step_length_in_yr = half_step_length*self.time.units
 
-                        a = 5
-        else:
-            raise(ValueError("I don't know how to do this yet"))
+        # Calculate the target isotope ratio
+        target_cadmium_isotope_delta = current_seawater.isotope_delta + (dataset_1_values[timestep+1]-current_seawater.isotope_delta)*0.5
+
+        # Calculate the organic ratio required to reach the target
+        extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+        organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/half_step_length_in_yr
+        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
+
+        if organic_flux_per_year_0<0.0:
+            organic_flux_per_year_0 = 0.0
 
 
+        # Group the fluxes with the new estimated organic flux
+        fluxes_0 = CadmiumFluxes(current_fluxes.input,
+                            current_fluxes.oxyhydroxide,
+                            current_fluxes.carbonate,
+                            current_fluxes.clay,
+                            estimated_organic_flux_0,
+                            current_fluxes.sulphide)
+        
+        # Perform another timestep
+        # Perform the first timestep with the estimated organic flux
+        (seawater_isotopes_0,
+        adjusted_fluxes_0,
+        flux_multiplier_0,
+        gradients_0) = Model.step_forward(half_step_length*self.time.units,
+                                                    initial_seawater,
+                                                    fluxes_0,
+                                                    self.isotope_offsets,
+                                                    initial_flux_multiplier,
+                                                    self.dynamic_mass)
+        
+        current_seawater = seawater_isotopes_0
+        current_fluxes = adjusted_fluxes_0
+        current_flux_multiplier = flux_multiplier_0
+
+        target_cadmium_isotope_delta = dataset_1_values[timestep+1]
+
+        extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+        
+
+        organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/(half_step_length*self.time.units)
+
+        if organic_flux_per_year_1<0.0:
+            organic_flux_per_year_1 = 0.0
+
+        estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
+
+        # Group the fluxes with the new estimated organic flux
+        fluxes_1 = CadmiumFluxes(adjusted_fluxes_0.input,
+                                    adjusted_fluxes_0.oxyhydroxide,
+                                    adjusted_fluxes_0.carbonate,
+                                    adjusted_fluxes_0.clay,
+                                    estimated_organic_flux_1,
+                                    adjusted_fluxes_0.sulphide)
+        
+        # Do another step
+        (seawater_isotopes_1,
+        adjusted_fluxes_1,
+        flux_multiplier_1,
+        gradients_1) = Model.step_forward(half_step_length*self.time.units,
+                                                    initial_seawater,
+                                                    fluxes_1,
+                                                    self.isotope_offsets,
+                                                    initial_flux_multiplier,
+                                                    self.dynamic_mass)
+        
+        current_seawater = seawater_isotopes_1
+        current_fluxes = adjusted_fluxes_1
+        current_flux_multiplier = flux_multiplier_1
+
+        target_cadmium_isotope_delta = dataset_1_values[timestep+1]
+
+        extra_organic_flux_2 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+        
+        organic_flux_per_year_2 = adjusted_fluxes_1.organic.mass + extra_organic_flux_2/(half_step_length*self.time.units)
+
+        if organic_flux_per_year_2<0.0:
+            organic_flux_per_year_2 = 0.0
+
+        estimated_organic_flux_2 = CadmiumMassIsotope(organic_flux_per_year_2,adjusted_fluxes_1.organic.isotope_delta)
+
+        # Group the fluxes with the new estimated organic flux
+        fluxes_2 = CadmiumFluxes(adjusted_fluxes_1.input,
+                                    adjusted_fluxes_1.oxyhydroxide,
+                                    adjusted_fluxes_1.carbonate,
+                                    adjusted_fluxes_1.clay,
+                                    estimated_organic_flux_2,
+                                    adjusted_fluxes_1.sulphide)
+        
+        # Do final step                        
+        (seawater_isotopes_2,
+        adjusted_fluxes_2,
+        flux_multiplier_2,
+        gradients_2) = Model.step_forward(half_step_length*self.time.units,
+                                                    seawater_isotopes_1,
+                                                    fluxes_2,
+                                                    self.isotope_offsets,
+                                                    flux_multiplier_1,
+                                                    self.dynamic_mass)
+
+        target_cadmium_isotope_delta = seawater_isotopes_2.isotope_delta + (dataset_1_values[timestep+2]-seawater_isotopes_2.isotope_delta)*0.5
+
+        extra_organic_flux_3 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        seawater_isotopes_2,
+                                                        adjusted_fluxes_2,
+                                                        half_step_length_in_yr)
+        
+        half_step_length = numpy.abs(self.time.steps[timestep+2]-self.time.steps[timestep+1])/2
+        half_step_length_in_yr = half_step_length*self.time.units
+
+        organic_flux_per_year_3 = adjusted_fluxes_2.organic.mass + extra_organic_flux_3/half_step_length_in_yr
+
+        if organic_flux_per_year_3<0.0:
+            organic_flux_per_year_3 = 0.0
+
+        estimated_organic_flux_3 = CadmiumMassIsotope(organic_flux_per_year_3,adjusted_fluxes_2.organic.isotope_delta)
+
+        # Group the fluxes with the new estimated organic flux
+        fluxes_3 = CadmiumFluxes(adjusted_fluxes_2.input,
+                                    adjusted_fluxes_2.oxyhydroxide,
+                                    adjusted_fluxes_2.carbonate,
+                                    adjusted_fluxes_2.clay,
+                                    estimated_organic_flux_3,
+                                    adjusted_fluxes_2.sulphide)
+        
+        # Average the fluxes
+        average_fluxes = (fluxes_0 + fluxes_1*2.0 + fluxes_2*2.0 + fluxes_3)*(1/6)
+        return average_fluxes
+
+    def invert2_rk4(self:Self,
+                    dataset_1_values: numpy.ndarray,
+                    parameter_1: FluxType,
+                    dataset_2_values: numpy.ndarray,
+                    parameter_2: FluxType) -> None:
+        """invert2 changes the specified parameters to try and match two datasets using the Runge-Kutta 4th order method
+
+        :param dataset_ages: Ages of the first dataset you want the model to try and match
+        :type dataset_ages: numpy.ndarray
+        :param dataset_1_values: δ114Cd dataset you want the model to try and match
+        :type dataset_1_values: numpy.ndarray
+        :param parameter_1: Specifies the type of flux you want to change
+        :type parameter_1: FluxType
+        :param dataset_2_values: [Cd]sw dataset you want the model to try and match
+        :type dataset_2_values: numpy.ndarray
+        :param parameter_2: Specifies the type of flux you want to change
+        :type parameter_2: FluxType
+
+        :return: None
+        :rtype: None"""
+        # Calculate the required change in the chosen parameter
+        match parameter_1, parameter_2:
+            case FluxType.organic, FluxType.sulphide:        
+                for timestep,time in enumerate(self.time.as_array()[:-2]):
+                    current_fluxes = self.get_fluxes(timestep)
+                    current_seawater = self.seawater[timestep]
+                    current_flux_multiplier = self.flux_multiplier[timestep]
+
+                    initial_seawater = current_seawater
+                    initial_flux_multiplier = current_flux_multiplier
+
+                    average_fluxes = self.invert2_rk4_step_organicsulphide(current_fluxes,
+                                                            current_seawater,
+                                                            current_flux_multiplier,
+                                                            timestep,
+                                                            dataset_1_values,
+                                                            dataset_2_values)
+
+
+                    # Apply the averaged fluxes
+                    step_length = numpy.abs(self.time.steps[timestep+1]-self.time.steps[timestep])
+                    
+                    (seawater_isotopes_final,
+                    adjusted_fluxes_final,
+                    flux_multiplier_final,
+                    gradients_final) = Model.step_forward(step_length*self.time.units,
+                                                                initial_seawater,
+                                                                average_fluxes,
+                                                                self.isotope_offsets,
+                                                                initial_flux_multiplier,
+                                                                self.dynamic_mass)
+                    
+                    # Record
+                    self.record(seawater_isotopes_final,adjusted_fluxes_final,flux_multiplier_final,timestep)
+
+    def invert2_rk4_step_organicsulphide(self,
+                         current_fluxes: CadmiumFluxes,
+                         current_seawater: CadmiumMassIsotope,
+                         current_flux_multiplier: float,
+                         timestep: int,
+                         dataset_1_values: numpy.ndarray,
+                         dataset_2_values: numpy.ndarray) -> CadmiumFluxes:
+        initial_fluxes = current_fluxes
+        initial_seawater = current_seawater
+        initial_flux_multiplier = current_flux_multiplier
+        
+        half_step_length = numpy.abs(self.time.steps[timestep+1]-self.time.steps[timestep])/2
+        half_step_length_in_yr = half_step_length*self.time.units
+
+        # Calculate the target isotope ratio
+        target_cadmium_isotope_delta = current_seawater.isotope_delta + (dataset_1_values[timestep+1]-current_seawater.isotope_delta)*0.5
+
+        # Calculate the target seawater mass
+        target_seawater_mass = current_seawater.mass + (dataset_2_values[timestep+1]-current_seawater.mass)*0.5
+
+        # Calculate the organic ratio required to reach the target
+        extra_organic_flux_0 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+        extra_sulphide_flux_0 = self.calculate_sulphide_to_target(target_seawater_mass,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        extra_organic_flux_0)
+        
+        organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/half_step_length_in_yr
+        sulphide_flux_per_year_0 = current_fluxes.sulphide.mass+extra_sulphide_flux_0/half_step_length_in_yr
+
+        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
+        estimated_sulphide_flux_0 = CadmiumMassIsotope(sulphide_flux_per_year_0,current_fluxes.sulphide.isotope_delta)
+
+        if organic_flux_per_year_0<0.0:
+            organic_flux_per_year_0 = 0.0
+        if sulphide_flux_per_year_0<0.0:
+            sulphide_flux_per_year_0 = 0.0
+
+
+        # Group the fluxes with the new estimated organic flux
+        fluxes_0 = CadmiumFluxes(current_fluxes.input,
+                            current_fluxes.oxyhydroxide,
+                            current_fluxes.carbonate,
+                            current_fluxes.clay,
+                            estimated_organic_flux_0,
+                            estimated_sulphide_flux_0)
+        
+        # Perform another timestep
+        # Perform the first timestep with the estimated organic flux
+        (seawater_isotopes_0,
+        adjusted_fluxes_0,
+        flux_multiplier_0,
+        gradients_0) = Model.step_forward(half_step_length*self.time.units,
+                                                    initial_seawater,
+                                                    fluxes_0,
+                                                    self.isotope_offsets,
+                                                    initial_flux_multiplier,
+                                                    self.dynamic_mass)
+        
+        current_seawater = seawater_isotopes_0
+        current_fluxes = adjusted_fluxes_0
+        current_flux_multiplier = flux_multiplier_0
+
+        target_cadmium_isotope_delta = dataset_1_values[timestep+1]
+
+        extra_organic_flux_1 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+        
+        extra_sulphide_flux_1 = self.calculate_sulphide_to_target(target_seawater_mass,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        extra_organic_flux_1)
+
+        organic_flux_per_year_1 = adjusted_fluxes_0.organic.mass + extra_organic_flux_1/(half_step_length*self.time.units)
+        sulphide_flux_per_year_1 = adjusted_fluxes_0.sulphide.mass + extra_sulphide_flux_1/(half_step_length*self.time.units)
+
+        if organic_flux_per_year_1<0.0:
+            organic_flux_per_year_1 = 0.0
+        if sulphide_flux_per_year_1<0.0:
+            sulphide_flux_per_year_1 = 0.0
+
+        estimated_organic_flux_1 = CadmiumMassIsotope(organic_flux_per_year_1,adjusted_fluxes_0.organic.isotope_delta)
+        estimated_sulphide_flux_1 = CadmiumMassIsotope(sulphide_flux_per_year_1,adjusted_fluxes_0.sulphide.isotope_delta)
+
+        # Group the fluxes with the new estimated organic flux
+        fluxes_1 = CadmiumFluxes(adjusted_fluxes_0.input,
+                                    adjusted_fluxes_0.oxyhydroxide,
+                                    adjusted_fluxes_0.carbonate,
+                                    adjusted_fluxes_0.clay,
+                                    estimated_organic_flux_1,
+                                    estimated_sulphide_flux_1)
+        
+        # Do another step
+        (seawater_isotopes_1,
+        adjusted_fluxes_1,
+        flux_multiplier_1,
+        gradients_1) = Model.step_forward(half_step_length*self.time.units,
+                                                    initial_seawater,
+                                                    fluxes_1,
+                                                    self.isotope_offsets,
+                                                    initial_flux_multiplier,
+                                                    self.dynamic_mass)
+        
+        current_seawater = seawater_isotopes_1
+        current_fluxes = adjusted_fluxes_1
+        current_flux_multiplier = flux_multiplier_1
+
+        target_cadmium_isotope_delta = dataset_1_values[timestep+1]
+
+        extra_organic_flux_2 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        half_step_length_in_yr)
+
+        extra_sulphide_flux_2 = self.calculate_sulphide_to_target(target_seawater_mass,
+                                                        current_seawater,
+                                                        current_fluxes,
+                                                        extra_organic_flux_2)
+        
+        organic_flux_per_year_2 = adjusted_fluxes_1.organic.mass + extra_organic_flux_2/(half_step_length*self.time.units)
+        sulphide_flux_per_year_2 = adjusted_fluxes_1.sulphide.mass + extra_sulphide_flux_2/(half_step_length*self.time.units)
+
+        if organic_flux_per_year_2<0.0:
+            organic_flux_per_year_2 = 0.0
+        if sulphide_flux_per_year_2<0.0:
+            sulphide_flux_per_year_2 = 0.0
+
+        estimated_organic_flux_2 = CadmiumMassIsotope(organic_flux_per_year_2,adjusted_fluxes_1.organic.isotope_delta)
+        estimated_sulphide_flux_2 = CadmiumMassIsotope(sulphide_flux_per_year_2,adjusted_fluxes_1.sulphide.isotope_delta)
+        
+        # Group the fluxes with the new estimated organic flux
+        fluxes_2 = CadmiumFluxes(adjusted_fluxes_1.input,
+                                    adjusted_fluxes_1.oxyhydroxide,
+                                    adjusted_fluxes_1.carbonate,
+                                    adjusted_fluxes_1.clay,
+                                    estimated_organic_flux_2,
+                                    estimated_sulphide_flux_2)
+        
+        # Do final step                        
+        (seawater_isotopes_2,
+        adjusted_fluxes_2,
+        flux_multiplier_2,
+        gradients_2) = Model.step_forward(half_step_length*self.time.units,
+                                                    seawater_isotopes_1,
+                                                    fluxes_2,
+                                                    self.isotope_offsets,
+                                                    flux_multiplier_1,
+                                                    self.dynamic_mass)
+
+        target_cadmium_isotope_delta = seawater_isotopes_2.isotope_delta + (dataset_1_values[timestep+2]-seawater_isotopes_2.isotope_delta)*0.5
+        target_seawater_mass = seawater_isotopes_2.mass + (dataset_2_values[timestep+2]-seawater_isotopes_2.mass)*0.5
+        
+        extra_organic_flux_3 = self.calculate_organic_to_target(target_cadmium_isotope_delta,
+                                                        seawater_isotopes_2,
+                                                        adjusted_fluxes_2,
+                                                        half_step_length_in_yr)
+        extra_sulphide_flux_3 = self.calculate_sulphide_to_target(target_seawater_mass,
+                                                        seawater_isotopes_2,
+                                                        adjusted_fluxes_2,
+                                                        extra_organic_flux_3)
+        
+        half_step_length = numpy.abs(self.time.steps[timestep+2]-self.time.steps[timestep+1])/2
+        half_step_length_in_yr = half_step_length*self.time.units
+
+        organic_flux_per_year_3 = adjusted_fluxes_2.organic.mass + extra_organic_flux_3/half_step_length_in_yr
+        sulphide_flux_per_year_3 = adjusted_fluxes_2.sulphide.mass + extra_sulphide_flux_3/half_step_length_in_yr
+        
+        if organic_flux_per_year_3<0.0:
+            organic_flux_per_year_3 = 0.0
+        if sulphide_flux_per_year_3<0.0:
+            sulphide_flux_per_year_3 = 0.0
+
+        estimated_organic_flux_3 = CadmiumMassIsotope(organic_flux_per_year_3,adjusted_fluxes_2.organic.isotope_delta)
+        estimated_sulphide_flux_3 = CadmiumMassIsotope(sulphide_flux_per_year_3,adjusted_fluxes_2.sulphide.isotope_delta)
+        
+        # Group the fluxes with the new estimated organic flux
+        fluxes_3 = CadmiumFluxes(adjusted_fluxes_2.input,
+                                    adjusted_fluxes_2.oxyhydroxide,
+                                    adjusted_fluxes_2.carbonate,
+                                    adjusted_fluxes_2.clay,
+                                    estimated_organic_flux_3,
+                                    estimated_sulphide_flux_3)
+        
+        # Average the fluxes
+        average_fluxes = (fluxes_0 + fluxes_1*2.0 + fluxes_2*2.0 + fluxes_3)*(1/6)
+        return average_fluxes
 
 
     @staticmethod
@@ -669,32 +902,54 @@ class Model:
         dataframe.to_excel(filename)
 
     @staticmethod
-    def calculate_organic_to_target(target_delta,seawater,cadmium_fluxes):
+    def calculate_organic_to_target(target_delta,seawater,cadmium_fluxes,timestep):
         target_ratio = Model.delta_to_ratio(target_delta)
-        # organic_ratio = cadmium_fluxes.organic.isotope_ratio
+        
+        total_114_input = cadmium_fluxes.input.mass_114*timestep
+        total_110_input = cadmium_fluxes.input.mass_110*timestep
 
-        # a = seawater.mass_114 + cadmium_fluxes.input.mass_114 - cadmium_fluxes.oxyhydroxide.mass_114 - cadmium_fluxes.carbonate.mass_114 - cadmium_fluxes.clay.mass_114 - cadmium_fluxes.organic.mass_114 - cadmium_fluxes.sulphide.mass_114
-        # b = target_ratio * (seawater.mass_110 + cadmium_fluxes.input.mass_110 - cadmium_fluxes.oxyhydroxide.mass_110 - cadmium_fluxes.carbonate.mass_110 - cadmium_fluxes.clay.mass_110 - cadmium_fluxes.organic.mass_110 - cadmium_fluxes.sulphide.mass_110)
-        # c = organic_ratio - target_ratio
+        total_114_oxyhydroxide = cadmium_fluxes.oxyhydroxide.mass_114*timestep
+        total_110_oxyhydroxide = cadmium_fluxes.oxyhydroxide.mass_110*timestep
 
-        # extra_110 = (a-b)/c
-        # extra_114 = organic_ratio*extra_110
+        total_114_carbonate = cadmium_fluxes.carbonate.mass_114*timestep
+        total_110_carbonate = cadmium_fluxes.carbonate.mass_110*timestep
 
-        a_114 = cadmium_fluxes.input.mass_114 - (cadmium_fluxes.oxyhydroxide.mass_114 + cadmium_fluxes.carbonate.mass_114 + cadmium_fluxes.clay.mass_114 + cadmium_fluxes.sulphide.mass_114)
-        a_110 = cadmium_fluxes.input.mass_110 - (cadmium_fluxes.oxyhydroxide.mass_110 + cadmium_fluxes.carbonate.mass_110 + cadmium_fluxes.clay.mass_110 + cadmium_fluxes.sulphide.mass_110)
+        total_114_clay = cadmium_fluxes.clay.mass_114*timestep
+        total_110_clay = cadmium_fluxes.clay.mass_110*timestep
+
+        total_114_organic = cadmium_fluxes.organic.mass_114*timestep
+        total_110_organic = cadmium_fluxes.organic.mass_110*timestep
+
+        total_114_sulphide = cadmium_fluxes.sulphide.mass_114*timestep
+        total_110_sulphide = cadmium_fluxes.sulphide.mass_110*timestep
+
+        a_114 = total_114_input - (total_114_oxyhydroxide + total_114_carbonate + total_114_clay + total_114_sulphide)
+        a_110 = total_110_input - (total_110_oxyhydroxide + total_110_carbonate + total_110_clay + total_110_sulphide)
+
+        # a_114 = cadmium_fluxes.input.mass_114 - (cadmium_fluxes.oxyhydroxide.mass_114 + cadmium_fluxes.carbonate.mass_114 + cadmium_fluxes.clay.mass_114 + cadmium_fluxes.sulphide.mass_114)
+        # a_110 = cadmium_fluxes.input.mass_110 - (cadmium_fluxes.oxyhydroxide.mass_110 + cadmium_fluxes.carbonate.mass_110 + cadmium_fluxes.clay.mass_110 + cadmium_fluxes.sulphide.mass_110)
 
         organic_110 = ((seawater.mass_114 + seawater.mass_110 + a_114 + a_110) - ((a_110+seawater.mass_110)*(target_ratio + 1)))/(cadmium_fluxes.organic.isotope_ratio - target_ratio)
         organic_114 = organic_110*cadmium_fluxes.organic.isotope_ratio
 
-        final_seawater_110 = seawater.mass_110 + cadmium_fluxes.input.mass_110 - (cadmium_fluxes.carbonate.mass_110 + cadmium_fluxes.clay.mass_110 + cadmium_fluxes.oxyhydroxide.mass_110 + cadmium_fluxes.sulphide.mass_110 + organic_110)
-        final_seawater_114 = seawater.mass_114 + cadmium_fluxes.input.mass_114 - (cadmium_fluxes.carbonate.mass_114 + cadmium_fluxes.clay.mass_114 + cadmium_fluxes.oxyhydroxide.mass_114 + cadmium_fluxes.sulphide.mass_114 + organic_114)
+        final_seawater_110 = seawater.mass_110 + total_110_input - (total_110_oxyhydroxide + total_110_carbonate + total_110_clay + total_110_sulphide + organic_110)
+        final_seawater_114 = seawater.mass_114 + total_114_input - (total_114_oxyhydroxide + total_114_carbonate + total_114_clay + total_114_sulphide + organic_114)
+        # final_seawater_110 = seawater.mass_110 + cadmium_fluxes.input.mass_110 - (cadmium_fluxes.carbonate.mass_110 + cadmium_fluxes.clay.mass_110 + cadmium_fluxes.oxyhydroxide.mass_110 + cadmium_fluxes.sulphide.mass_110 + organic_110)
+        # final_seawater_114 = seawater.mass_114 + cadmium_fluxes.input.mass_114 - (cadmium_fluxes.carbonate.mass_114 + cadmium_fluxes.clay.mass_114 + cadmium_fluxes.oxyhydroxide.mass_114 + cadmium_fluxes.sulphide.mass_114 + organic_114)
 
-        final_delta = Model.ratio_to_delta(final_seawater_114/final_seawater_110)       
+        final_delta = Model.ratio_to_delta(final_seawater_114/final_seawater_110)
 
-        extra_110 = organic_110 - cadmium_fluxes.organic.mass_110
-        extra_114 = organic_114 - cadmium_fluxes.organic.mass_114
+        test_organic = (organic_110+organic_114)/timestep
+
+        extra_110 = organic_110 - total_110_organic
+        extra_114 = organic_114 - total_114_organic
 
         return (extra_110+extra_114)
+    @staticmethod
+    def calculate_sulphide_to_target(target_mass,seawater,cadmium_fluxes,organic_flux):
+        predicted_mass = seawater.mass + cadmium_fluxes.input.mass - cadmium_fluxes.oxyhydroxide.mass - cadmium_fluxes.carbonate.mass - cadmium_fluxes.clay.mass - organic_flux - cadmium_fluxes.sulphide.mass
+        extra_sulphide = predicted_mass - target_mass
+        return extra_sulphide
     @staticmethod
     def delta_to_ratio(delta,standard=2.30416):
         return ((delta/1000)+1)*standard

@@ -123,73 +123,10 @@ class Time:
             return 1.0
         elif units=="Myr":
             return 1e6
+    @property
+    def steps(self):
+        return self.as_array()
     
-class DynamicTime:
-    def __init__(self,start,initial_step,stop,units="yr",max_step=None,min_step=None):
-        self.start = start
-        self.initial_step = initial_step
-        self.stop = stop
-        self.units = Time.translate_units(units)
-        self.reversed = start>stop
-        self.steps = []
-        self.max_step = max_step if max_step is not None else initial_step*10
-        self.min_step = min_step if min_step is not None else initial_step/10
-    def as_array_using_initial(self):
-        match self.reversed:
-            case True:
-                return numpy.arange(self.start,self.stop,-self.initial_step)
-            case False:
-                return numpy.arange(self.start,self.stop,self.initial_step)
-    def as_array_after(self):
-        match self.reversed:
-            case True:
-                return self.start - numpy.cumsum(self.steps)
-            case False:
-                return self.start + numpy.cumsum(self.steps)
-    def inside(self,value):
-        match self.reversed:
-            case True:
-                return value<=self.start and value>self.stop
-            case False:
-                return value<self.stop and value>=self.start
-    def increase_step(self,step):
-        return step if step>=self.max_step else step*2
-    def decrease_step(self,step):
-        return step if step<=self.min_step else step/2
-    @property
-    def initial_step_in_yr(self):
-        return self.initial_step*self.units
-
-class MultiTime:
-    def __init__(self,steps,units="yr"):
-        self.steps = steps
-        self.reversed = bool(steps[0]>steps[-1])
-        self.units = Time.translate_units(units)
-    @property
-    def length(self):
-        return len(self.steps)
-    def as_array(self: Self) -> numpy.ndarray:
-        return numpy.array(self.steps)
-    def as_padded_array(self):
-        return numpy.append(self.as_array(),[self.steps[-1],self.steps[-1]])
-    @property
-    def beginning(self):
-        match self.reversed:
-            case True:
-                return self.steps[-1]
-            case False:
-                return self.steps[0]
-    @property
-    def end(self):
-        match self.reversed:
-            case True:
-                return self.steps[0]
-            case False:
-                return self.steps[-1]
-    @property
-    def initial_step_in_yr(self):
-        return numpy.abs(self.steps[0]-self.steps[1])*self.units
-
 class FluxType(Enum):
     input = 1
     oxyhydroxide = 2
