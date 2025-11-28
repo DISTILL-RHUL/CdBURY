@@ -1,4 +1,5 @@
 import numpy
+import numpy.typing
 from enum import Enum,auto
 
 from typing import Self
@@ -90,8 +91,7 @@ class Time:
     @property
     def padded_length(self):
         return len(self.as_padded_array())
-    @property
-    def step_in_yr(self):
+    def step_in_yr(self,index=None) -> float:
         return abs(self.step*self.units)
     @property
     def beginning(self):
@@ -127,6 +127,44 @@ class Time:
     def steps(self):
         return self.as_array()
     
+class ManualTime:
+    def __init__(self,times: numpy.typing.NDArray[numpy.floating],units="yr"):
+        if times.ndim != 1:
+            raise ValueError("times array must be one-dimensional")
+        self.times = times
+        self.units = self.translate_units(units)
+    @property
+    def length(self):
+        return len(self.times)
+    @property
+    def padded_length(self):
+        return len(self.as_padded_array())
+    def step_in_yr(self,index:int) -> float:
+        if index==len(self.times)-1:
+            return 0.0
+        else:
+            return float(abs(self.times[index+1]-self.times[index])*self.units)
+    @property
+    def beginning(self):
+        return self.times[0]
+    @property
+    def end(self):
+        return self.times[-1]
+    def as_array(self):
+        return self.times
+    def as_padded_array(self):
+        return numpy.append(self.times,[self.end,self.end])
+    @staticmethod
+    def translate_units(units):
+        if units=="yr":
+            return 1.0
+        elif units=="Myr":
+            return 1e6
+        else:
+            raise ValueError(f"Unsupported unit: {units}")
+    @property
+    def steps(self):
+        return self.as_array()
 class FluxType(Enum):
     input = 1
     oxyhydroxide = 2

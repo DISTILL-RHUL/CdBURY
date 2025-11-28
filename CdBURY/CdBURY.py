@@ -1,12 +1,12 @@
 import numpy,pandas
 import CdBURY.core as core
-from CdBURY.classes import CadmiumMassIsotope, FluxType, CadmiumFluxes, Time, Perturbation
+from CdBURY.classes import CadmiumMassIsotope, FluxType, CadmiumFluxes, Time, ManualTime, Perturbation
 
 from typing import Self
 
 class Model:
     def __init__(self:Self,
-                 time:Time,
+                 time:Time | ManualTime,
                  initial_seawater:CadmiumMassIsotope,
                  initial_fluxes:CadmiumFluxes,
                  isotope_offsets:CadmiumFluxes,
@@ -125,7 +125,7 @@ class Model:
         self.perturbations.append(perturbation)
 
     @staticmethod
-    def step_forward(timestep:int,
+    def step_forward(timestep:float,
                      seawater:CadmiumMassIsotope,
                      fluxes:CadmiumFluxes,
                      isotope_offsets:CadmiumFluxes,
@@ -133,8 +133,8 @@ class Model:
                      dynamic_mass:bool = True) -> tuple[CadmiumMassIsotope, CadmiumFluxes, float, tuple[float, tuple[float, float]]]:
         """step_forward calculates the next timestep of the model
         
-        :param timestep: Timestep number
-        :type timestep: int 
+        :param timestep: time step in years
+        :type timestep: float 
         :param seawater: Current seawater mass and isotope ratio
         :type seawater: CadmiumMassIsotope 
         :param fluxes: Mass and isotope ratio of input and output fluxes
@@ -183,7 +183,7 @@ class Model:
         :return: None
         :rtype: None"""
         match self.time:
-            case Time():
+            case Time() | ManualTime():
                 self.seawater[timestep+1] = seawater_isotopes
                 self.input_flux[timestep+1] = fluxes.input
                 self.oxyhydroxide_flux[timestep+1] = fluxes.oxyhydroxide
@@ -192,6 +192,7 @@ class Model:
                 self.organic_flux[timestep+1] = fluxes.organic
                 self.sulphide_flux[timestep+1] = fluxes.sulphide
                 self.flux_multiplier[timestep+1] = flux_multiplier
+
 
 
     def solve(self:Self) -> None:
@@ -213,7 +214,7 @@ class Model:
             (seawater_isotopes_0,
              adjusted_fluxes_0,
              flux_multiplier_0,
-             gradients_0) = Model.step_forward(self.time.step_in_yr,
+             gradients_0) = Model.step_forward(self.time.step_in_yr(timestep),
                                                                         current_seawater,
                                                                         current_fluxes,
                                                                         self.isotope_offsets,
@@ -223,7 +224,7 @@ class Model:
             (seawater_isotopes_1,
              adjusted_fluxes_1,
              flux_multiplier_1,
-             gradients_1) = Model.step_forward(self.time.step_in_yr,
+             gradients_1) = Model.step_forward(self.time.step_in_yr(timestep),
                                                                         seawater_isotopes_0,
                                                                         adjusted_fluxes_0,
                                                                         self.isotope_offsets,
@@ -238,7 +239,7 @@ class Model:
             self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
 
             for perturbation in self.perturbations:
-                if time>perturbation.time and time<=perturbation.time+self.time.step:
+                if time>perturbation.time and time<=perturbation.time+self.time.steps[timestep+1]:
                     if perturbation.type == FluxType.input:
                         self.input_flux[timestep+1] = perturbation.isotope_flux
                     elif perturbation.type == FluxType.oxyhydroxide:
@@ -310,7 +311,7 @@ class Model:
                     (seawater_isotopes_0,
                     adjusted_fluxes_0,
                     flux_multiplier_0,
-                    gradients_0) = Model.step_forward(self.time.step_in_yr,
+                    gradients_0) = Model.step_forward(self.time.step_in_yr(timestep),
                                                                 current_seawater,
                                                                 current_fluxes_with_organic,
                                                                 self.isotope_offsets,
@@ -341,7 +342,7 @@ class Model:
                     (seawater_isotopes_1,
                     adjusted_fluxes_1,
                     flux_multiplier_1,
-                    gradients_1) = Model.step_forward(self.time.step_in_yr,
+                    gradients_1) = Model.step_forward(self.time.step_in_yr(timestep),
                                                                 seawater_isotopes_0,
                                                                 next_fluxes,
                                                                 self.isotope_offsets,
@@ -430,10 +431,10 @@ class Model:
                                                         current_fluxes,
                                                         half_step_length_in_yr)
         organic_flux_per_year_0 = current_fluxes.organic.mass+extra_organic_flux_0/half_step_length_in_yr
-        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
-
         if organic_flux_per_year_0<0.0:
             organic_flux_per_year_0 = 0.0
+            
+        estimated_organic_flux_0 = CadmiumMassIsotope(organic_flux_per_year_0,current_fluxes.organic.isotope_delta)
 
 
         # Group the fluxes with the new estimated organic flux
