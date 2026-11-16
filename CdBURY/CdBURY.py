@@ -239,7 +239,12 @@ class Model:
             self.record(average_seawater_isotopes,average_isotope_fluxes,average_flux_multiplier,timestep)
 
             for perturbation in self.perturbations:
-                if time>perturbation.time and time<=perturbation.time+self.time.steps[timestep+1]:
+                # There is no following timestep to perturb on the final timestep
+                if timestep+1>=len(time_array):
+                    break
+                next_time = time_array[timestep+1]
+                # Apply the perturbation if it falls within this timestep (time may run in either direction)
+                if time<=perturbation.time<next_time or next_time<perturbation.time<=time:
                     if perturbation.type == FluxType.input:
                         self.input_flux[timestep+1] = perturbation.isotope_flux
                     elif perturbation.type == FluxType.oxyhydroxide:
